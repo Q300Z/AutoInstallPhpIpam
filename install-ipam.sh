@@ -21,8 +21,8 @@ BDD_DEFINE="/phpipam/" #http://NomDeDomaine/ = bdd_define="/" | http://NomDeDoma
 BDD_ROOT_MDP="root"
 
 ## function pour les config apache et ipam ##
-config_apache () {
-echo "$1"
+configapache () {
+/sbin/a2enmod rewrite
 mv /etc/apache2/sites-enabled/000-default.conf /etc/apache2/sites-enabled/000-default_new.conf
 echo "	<VirtualHost *:80>
 			DocumentRoot /var/www/phpipam
@@ -39,7 +39,7 @@ echo "	<VirtualHost *:80>
 
 }
 
-config_ipam () {
+configipam () {
 echo "<?php
 
 /**
@@ -297,7 +297,7 @@ fi
 
 #### Installations pour DEBIAN ou CENTOS ####
 
-echo -n "${YELLOW}3# | ${GREEN}Voulez-vous installez IPAM pour Debian ou CentOS ? (debian):${NOCOLOR}\n"
+echo -n "${YELLOW}3# | ${GREEN}Voulez-vous installez IPAM pour Debian ou CentOS ?${NOCOLOR}\n"
 read c
 case $c in
 debian | d)
@@ -339,7 +339,7 @@ then
 		;;
 	esac
 
-elif test$AUTO = 1
+elif test $AUTO = 1
 then
 	echo "${YELLOW}4# | ${GREEN}Installations des paquets pour l'installation d'Apache, PHP et MySQL :${NOCOLOR}\n"
 	apt-get install -y fping php-snmp apache2 mariadb-server php php-pear php-gmp php-mysql php-mbstring php-gd php-curl php-cli git
@@ -414,15 +414,15 @@ then
 		;;
 	*)
 		echo "${GREEN}Configuration ...${NOCOLOR}\n"
-		config_apache
+		configapache
 		systemctl restart apache2 
 		;;
 	esac
 
-elif test$AUTO = 1
+elif test $AUTO = 1
 then
 	echo "${YELLOW}6# | ${GREEN}Configuration d'Apache :${NOCOLOR}\n"
-	config_apache start
+	configapache
 	systemctl restart apache2 
 fi
 
@@ -444,7 +444,7 @@ then
 		;;
 	esac
 
-elif test$AUTO = 1
+elif test $AUTO = 1
 then
 	echo "${YELLOW}7# | ${GREEN}Configuration de MySQL :${NOCOLOR}\n"
 	mysql_secure_installation
@@ -467,32 +467,32 @@ then
 		cd /var/www/phpipam
 		echo -n "${YELLOW}9# | ${GREEN}L'url de connexion à la base de donnée :${NOCOLOR}\n"
 		read localhost
-		BDD_LOCALHOST = $localhost
+		BDD_LOCALHOST=$localhost
 		
 		echo -n "${YELLOW}10# | ${GREEN}User de la base de donnée :${NOCOLOR}\n"
 		read phpipam
-		BDD_PHPIPAM = $phpipam
+		BDD_PHPIPAM=$phpipam
 		
 		echo -n "${YELLOW}11# | ${GREEN}Mot de passe de l'utilisateur de la base de donnée :${NOCOLOR}\n"
 		read phpipamadmin
-		BDD_PHPIPAMADMIN = $phpipamadmin
+		BDD_PHPIPAMADMIN=$phpipamadmin
 		
 		echo -n "${YELLOW}12# | ${GREEN}Nom de la base de donnée :${NOCOLOR}\n"
 		read phpipam2
-		BDD_PHPIPAM2 = $phpipam2
+		BDD_PHPIPAM2=$phpipam2
 		
 		echo -n "${YELLOW}13# | ${GREEN}Base de l'url : \nExemple: http://NomDeDomaine/ = bdd_define='/' | http://NomDeDomaine/phpipam/ = bdd_define='/phpipam/'${NOCOLOR}\n"
 		read define
-		BDD_DEFINE = $define
+		BDD_DEFINE=$define
 		
-		config_ipam BDD_LOCALHOST BDD_PHPIPAM BDD_PHPIPAMADMIN BDD_PHPIPAM2 BDD_DEFINE
+		configipam BDD_LOCALHOST BDD_PHPIPAM BDD_PHPIPAMADMIN BDD_PHPIPAM2 BDD_DEFINE
 		;;
 	esac
 
 elif test $AUTO = 1
 then
 	echo "${YELLOW}14# | ${GREEN}Configuration du fichier config.php pour la connexion à la base de donnée :${NOCOLOR}\n"
-	config_ipam BDD_LOCALHOST BDD_PHPIPAM BDD_PHPIPAMADMIN BDD_PHPIPAM2 BDD_DEFINE
+	configipam BDD_LOCALHOST BDD_PHPIPAM BDD_PHPIPAMADMIN BDD_PHPIPAM2 BDD_DEFINE
 	
 fi
 
@@ -512,10 +512,10 @@ then
 		;;
 	*)
 		echo "${GREEN}Création de la base :${NOCOLOR}\n"
-		mysql -u root -p
+		mysql -u root -p --excute="
 			CREATE USER "${BDD_PHPIPAM}"@'localhost' IDENTIFIED BY "${BDD_PHPIPAMADMIN}";
 			GRANT ALL PRIVILEGES ON *.* TO "${BDD_PHPIPAM}"@'localhost' with grant option;
-			FLUSH PRIVILEGES;
+			FLUSH PRIVILEGES;"
 
 		;;
 	esac
@@ -523,10 +523,10 @@ then
 elif test ${AUTO} = 1
 then
 	echo "${GREEN}Configuration du mot de passe Root dans MySql :${NOCOLOR}\n"
-	mysql -u root -p
-		CREATE USER "${BDD_PHPIPAM}"@'localhost' IDENTIFIED BY "${BDD_PHPIPAMADMIN}";
-		GRANT ALL PRIVILEGES ON *.* TO "${BDD_PHPIPAM}"@'localhost' with grant option;
-		FLUSH PRIVILEGES;
+	mysql -u root -p --excute="
+			CREATE USER "${BDD_PHPIPAM}"@'localhost' IDENTIFIED BY "${BDD_PHPIPAMADMIN}";
+			GRANT ALL PRIVILEGES ON *.* TO "${BDD_PHPIPAM}"@'localhost' with grant option;
+			FLUSH PRIVILEGES;"
 		
 	fi
 
@@ -553,7 +553,7 @@ then
 		;;
 	esac
 
-elif test$AUTO = 1
+elif test $AUTO = 1
 then
 	echo "${YELLOW}16# | ${GREEN}Configuration des permissions :${NOCOLOR}\n"
 	chown www-data:www-data -R /var/www/phpipam/
@@ -587,7 +587,7 @@ then
 		;;
 	esac
 
-elif test$AUTO = 1
+elif test $AUTO = 1
 then
 	echo "${YELLOW}17# | ${GREEN}Configuration des tâches CRON :${NOCOLOR}\n"
 	echo "# update host statuses every 5 minutes
@@ -601,8 +601,10 @@ fi
 #### FIN ####
 fi
 
+
 #### Installation pour CentOS ####
 
 #### FIN ####
+
 
 echo "${WHITE}" #Définit la couleut de l'écriture en blanc
